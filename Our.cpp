@@ -1,5 +1,5 @@
 #include <iostream>
-#include <windows.h>
+#include <cstring>
 #include "Our.h"
 #include "pre_op.h"
 using namespace std;
@@ -203,13 +203,12 @@ double **M_inv_right_mul( int *P,  double *P_R,  double *H,  double **mat, int r
 
 void Our(double **X, double **Y) {
 	int i, j, k;
-	DWORD t_s, t_run;
+    struct timespec ts_start, ts_end;
+    double ts;
 
 /*######
 key_Gen
 ######*/
-	t_run = 0;
-
 	 int *P1 = new int[m];
 	 double *P1_R = new double[m];
 	 double *H1 = new double[m];
@@ -225,7 +224,7 @@ key_Gen
 	for (i = 0; i < s; i++) { P3[i] = i; }
 
 	// gen P
-	t_s = ::GetTickCount();
+    clock_gettime(CLOCK_MONOTONIC, &ts_start);
 	int swap_tmp;
 	for (i = 0; i < m; i++) {
 		j = rand() % m;
@@ -256,8 +255,10 @@ key_Gen
 		H3[i] = rand() % DOMAIN_MAX + 1;
 	}
 
-	t_run += ::GetTickCount() - t_s;
-	cout << "key_Gen time: " << t_run << "ms" << endl;
+    clock_gettime(CLOCK_MONOTONIC, &ts_end);
+    ts = (ts_end.tv_sec - ts_start.tv_sec) * 1000.0 +
+         (ts_end.tv_nsec - ts_start.tv_nsec) / 1000000.0;
+	cout << "key_Gen time: " << ts << " msecond" << endl;
 
 /*######
 data_Enc
@@ -265,13 +266,12 @@ data_Enc
 i遍历P的size，再进一步找规律
 X's dimension: m*n
 ######*/
-	t_run = 0;
-	t_s = ::GetTickCount();
+    clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
-	 double **tmp;
+    double **tmp;
 
 	// X_enc = M1 * X * M2_inv
-	 double **X_enc;
+    double **X_enc;
 	// M1 * X
 	tmp = M_left_mul(P1, P1_R, H1, X, m, n);
 	// (M1 * X) * M2_inv
@@ -284,16 +284,16 @@ X's dimension: m*n
 	// (M2 * Y) * M3_inv
 	Y_enc = M_inv_right_mul(P3, P3_R, H3, tmp, n, s);
 
-	t_run += ::GetTickCount() - t_s;
-	cout << "Data_Enc time: " << t_run << "ms" << endl;
+    clock_gettime(CLOCK_MONOTONIC, &ts_end);
+    ts = (ts_end.tv_sec - ts_start.tv_sec) * 1000.0 +
+         (ts_end.tv_nsec - ts_start.tv_nsec) / 1000000.0;
+	cout << "Data_Enc time: " << ts << " msecond" << endl;
 
 /*######
 cloud_MMC
 ######*/
-	t_run = 0;
-	t_s = ::GetTickCount();
-
-	 double **Z_enc;
+    clock_gettime(CLOCK_MONOTONIC, &ts_start);
+    double **Z_enc;
 	Z_enc = (double**)malloc(m * sizeof(double *));
 	for (i = 0; i<m; i++) {
 		Z_enc[i] = (double *)malloc(s * sizeof(double));
@@ -308,30 +308,31 @@ cloud_MMC
 		}
 	}
 
-	t_run += ::GetTickCount() - t_s;
-	cout << "cloud_MMC time: " << t_run << "ms" << endl;
+    clock_gettime(CLOCK_MONOTONIC, &ts_end);
+    ts = (ts_end.tv_sec - ts_start.tv_sec) * 1000 + (ts_end.tv_nsec - ts_start.tv_nsec)/1000000;
+	cout << "cloud_mmc time: " << ts << " msecond" << endl;
 
 /*######
 result_Dec
 ######*/
-	t_run = 0;
-	t_s = ::GetTickCount();
+    clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
 	// Z = M1_inv * Z_enc * M3
-	 double **Z;
+    double **Z;
 	// M1_inv * Z_enc
 	tmp = M_inv_left_mul(P1, P1_R, H1, Z_enc, m, s);
 	// (M1_inv * Z_enc) * M3
 	Z = M_right_mul(P3, P3_R, H3, tmp, m, s);
 
-	t_run += ::GetTickCount() - t_s;
-	cout << "Result_Dec time: " << t_run << "ms" << endl;
+    clock_gettime(CLOCK_MONOTONIC, &ts_end);
+    ts = (ts_end.tv_sec - ts_start.tv_sec) * 1000.0 +
+         (ts_end.tv_nsec - ts_start.tv_nsec) / 1000000.0;
+	cout << "Result_Gen time: " << ts << " msecond" << endl;
 
 /*######
 result_verification
 ######*/
-	t_run = 0;
-	t_s = ::GetTickCount();
+    clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
 	bool flag = true;
 	for (k = 0; k < l; k++) {
@@ -373,8 +374,10 @@ result_verification
 	//else
 	//cout << "Verification Succeed";
 
-	t_run += ::GetTickCount() - t_s;
-	cout << "Result_Verify time: " << t_run << "ms" << endl;
+    clock_gettime(CLOCK_MONOTONIC, &ts_end);
+    ts = (ts_end.tv_sec - ts_start.tv_sec) * 1000.0 +
+         (ts_end.tv_nsec - ts_start.tv_nsec) / 1000000.0;
+	cout << "Result_Verify time: " << ts << " msecond" << endl;
 
 	//mat_show(Z, m, s);
 }
